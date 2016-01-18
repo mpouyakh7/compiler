@@ -1,0 +1,75 @@
+#include <stdio.h>
+
+int main()
+{
+  //
+    FILE *cprogram;
+    FILE *hfile;
+    FILE *prepc;
+    char c=1;
+    char cfile_name[20];
+    char hfile_name[20];
+    char prepfile_name[20];
+    int  i=0;
+    int  k=0;
+
+    printf("\n Please enter the C program file name (full path): ");
+    scanf("%s",cfile_name);
+
+    if((cprogram=fopen(cfile_name,"r"))==NULL) return 1;
+
+    while ( (c = fgetc(cprogram)) != EOF )
+        {
+            if(c =='<')
+            {
+               break;
+            }
+        }
+
+        fscanf(cprogram,"%s",hfile_name);
+
+        for(i=0;hfile_name[i]!='\0';i++)
+        {
+            if(hfile_name[i]=='>')
+            {
+               hfile_name[i]='\0';
+               break;
+            }
+        }
+
+
+    for(i=0; cfile_name[i]!='.';i++)
+        prepfile_name[i]=cfile_name[i];
+
+    prepfile_name[i]='.'; prepfile_name[i+1]='d'; prepfile_name[i+2]='a'; prepfile_name[i+3]='t';
+    prepfile_name[i+4]='\0';
+
+    printf("\n hfilename=%s , prepfilename=%s \n", hfile_name, prepfile_name);
+
+
+    prepc=fopen(prepfile_name,"w");
+     if( prepc == NULL)
+        printf("\nWriting to file. The file, pouya.dat, can not be opened");
+    else{
+
+       if((hfile=fopen(hfile_name,"r"))!= NULL)
+       while( !feof(hfile) )
+       {
+           c=fgetc(hfile);
+           printf("%c",c);
+           if (c!=-1)
+           fputc(c,prepc);
+       }
+
+       while( !feof(cprogram) )
+       {
+           c=fgetc(cprogram);
+           printf("%c",c);
+           if (c!=-1)
+           fputc(c,prepc);
+       }
+
+    }
+
+    return 0;
+}
