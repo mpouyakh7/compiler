@@ -1,0 +1,286 @@
+#include<stdio.h>
+#include<ctype.h>
+#include<string.h>
+void keyw(char *p, char *tp, char *att);
+int getToken(char *tp, char *att,int *Line);
+int i=0,id=0,kw=0,num=0,op=0;
+char keys[12][10]={"char","float","bool",
+"int","void", "if","else","while","NULL","main","return"};
+char multioper[5][3]={"==","&&","||","!="};
+char buff[3]="\0";
+
+FILE *f1;
+typedef struct token
+{
+    char typeT[20];
+    char attT[20];
+    int lineT;
+    struct token *next;
+}token;
+
+typedef struct symbol
+{
+    char typeS[20];
+    char attrS[20];
+    int value;
+    int index;
+    struct symbol *next;
+}symbolT;
+
+struct symbol *firstS,*mS;
+int Sindex = 0;
+char idType[20]="\0";
+int *line;
+
+void main() {
+
+    	//clrscr();
+
+    char type[20], attr[20];
+    char fname[50];
+
+    token *tmpT,*mT,*firstT;
+
+    firstS = NULL;
+    firstT = NULL;
+    line= (int *) malloc(sizeof(int));
+    *line=1;
+    printf("enter file path (drive:\\fold\\filename)\n");
+    scanf("%s",fname);
+    f1 = fopen(fname,"r");
+    //f1 = fopen("Input","r");
+
+    while ( !getToken(type, attr, line)){
+      // printf("\n %s is a %s",attr, type);
+       if(firstT==NULL)
+       {
+            tmpT= (token *) malloc( sizeof(token));
+            firstT=tmpT;
+            firstT->next=NULL;
+            strcpy(firstT->attT,attr);
+            strcpy(firstT->typeT,type);
+            firstT->lineT= *line;
+            printf("-> %s is a %s at line  %d\n",firstT->attT,firstT->typeT,firstT->lineT);
+       }
+       else
+       {
+            tmpT= (token *) malloc( sizeof(token));
+            mT=firstT;
+         while(mT->next!=NULL) mT=mT->next;
+
+                mT->next=tmpT;
+                tmpT->next=NULL;
+                strcpy(tmpT->attT,attr);
+                strcpy(tmpT->typeT,type);
+                tmpT->lineT= *line;
+                printf("-> %s is a %s at line %d\n",tmpT->attT,tmpT->typeT,tmpT->lineT);
+
+
+       }
+
+    }
+
+   // printf("\nKeywords: %d\nIdentifiers: %d\nOperators: %d\nNumbers: %d\n",kw,id,op,num);
+}
+
+int getToken (char tp[], char att[],int *Line)
+{
+    char ch,ch_str[25],str[25],seps[15]=" \t\n,'\"<>",oper[]="*-;+={}()|<>/";
+    int j, ll;
+
+    	if(f1==NULL)
+        {
+        	 printf("file not found");
+        	 exit(0);
+        }
+
+        while( 1 )
+        {
+            if( buff[0] != '\0')
+            {
+                ch=buff[0];
+                buff[0]='\0';
+            }
+            else if ( (ch=fgetc(f1)) == EOF)
+                return 1;
+
+            for(j=0;j<=13;j++)
+            {
+                if(ch==oper[j])
+                    if( i>0 )
+                {
+                        buff[0]=ch;
+                        str[i]='\0';
+                        keyw(str, tp ,att);
+                }
+                else
+                {
+                    ch_str[0]=ch;
+                    if ( (ch= fgetc(f1))==ch_str[0] )
+                        {ch_str[1]=ch; ch_str[2]='\0';}
+                    else if ( ch_str[0]=='!' && ch=='=')
+                        {ch_str[1]=ch; ch_str[2]='\0';}
+                    else
+                        {ch_str[1]='\0'; buff[0]=ch;}
+
+                    //printf("\n%s is an operator\n",ch_str);
+                    if( ch_str[0]=='{' || ch_str[0]=='}' || ch_str[0]==';'|| ch_str[0]=='('|| ch_str[0]==')') strcpy(tp,"punctuator");
+                    else strcpy(tp,"operator");
+                    strcpy(att,ch_str);
+                    op++;
+                    i=-1;
+                 }
+            }
+
+            for(j=0;j<=14;j++)
+            {
+                if(i==-1) break;
+
+                if(ch==seps[j])
+                {
+                    if(ch=='#')
+                    {
+                        ll=0;
+                        while(ch!='>')
+                        {
+                                ch=fgetc(f1);
+                                ch_str[ll]=ch;
+                                ll++;
+                        }
+                        printf("%s is a header file\n",ch_str);
+                        strcpy(tp,"header");
+                        strcpy(att,ch_str);
+                        break;
+                    }
+                    if(ch=='\n')
+                    {
+                        (*Line)++;
+                    }
+
+                    if(ch=='\'')
+                    {
+                           ll=0;
+                           do
+                           {
+                                ch=fgetc(f1);
+                                ch_str[ll]=ch;
+                                ll++;
+                           }    while(ch!='\'');
+
+                           ch_str[ll-1]='\0';
+                           strcpy(tp,"charactor");
+                           strcpy(att,ch_str);
+                           i=-1;
+                           break;
+                    }
+
+                    str[i]='\0';
+                    keyw(str, tp ,att);
+                }
+            }
+
+            if(i==-1)
+            {
+                i=0;
+                break;
+            }
+            else if (i==-2)
+            {
+                i=0;
+            }
+            else {
+                str[i]=ch;
+                i++;
+            }
+
+        }
+            //getch();
+
+        return 0;
+    }
+
+    void keyw(char *p, char tp[], char att[])
+    {
+            int k,flag=0;
+            for(k=0;k<=11;k++)
+            {
+                if(strcmp(keys[k],p)==0)
+                    {
+                     strcpy(tp,"keyword");
+                     strcpy(att,p);
+                     kw++;
+                     flag=1;
+
+                     if (idType[0] != '\0')
+                     {
+                         if( strcmp(p,"main") !=0 ) printf("\nKeyw-215: Warning Unexpected idType at line %d\n",*line);
+                         idType[0]='\0';
+                     }
+                     else if(k<4) strcpy(idType,p);
+                     break;
+                }
+            }
+            if(flag==0)
+            {
+                if(isdigit(p[0]))
+                    {
+                     strcpy(tp,"number");
+                     strcpy(att,p);
+                     num++;
+                }
+                else
+                {
+                    //if(p[0]!=13&&p[0]!=10)
+                    if(p[0]!='\0')
+                    {
+                        strcpy(tp,"identifier");
+                        strcpy(att,p);
+
+                        symbolT *st_ptr;
+                        st_ptr= firstS;
+                        int sym_index=-1;
+                        while (st_ptr != NULL)
+                        {
+                          if ( strcmp(st_ptr->attrS,att)==0 ) sym_index = st_ptr->index;
+                          st_ptr= st_ptr->next;
+                        }
+
+                        if ( sym_index != -1 && idType[0]!='\0' )   printf("\nKeyw-246: Unexpected idType at line %d\n",*line);
+                        else if( sym_index == -1 && idType[0]=='\0' ) printf("\nKeyw-247: Unexpected idType at line %d\n",*line);
+                        else if( sym_index == -1 )
+                        {
+                           Sindex ++;
+                           symbolT *tmpS;
+                           if(firstS==NULL)
+                           {
+                             tmpS= (symbolT *) malloc( sizeof(symbolT));
+                             firstS=tmpS;
+                             firstS->next=NULL;
+                             strcpy(firstS->attrS,att);
+                             strcpy(firstS->typeS,idType);
+                             firstS->index= Sindex;
+                             printf("A new identifier, %s, inserted with index %d\n",firstS->attrS,firstS->index);
+                           }
+                           else
+                           {
+                             st_ptr=firstS;
+                             while(st_ptr->next!=NULL)st_ptr=st_ptr->next;
+
+                             tmpS= (symbolT *) malloc( sizeof(symbolT));
+                             st_ptr->next=tmpS;
+                             tmpS->next=NULL;
+                             strcpy(tmpS->attrS,att);
+                             strcpy(tmpS->typeS,idType);
+                             tmpS->index= Sindex;
+                             printf("A new identifier, %s, inserted with index %d\n",tmpS->attrS,tmpS->index);
+                           }
+                           idType[0]='\0';
+                        }
+                    }
+                }
+            }
+
+            if ( p[0] =='\0' ) i=-2;
+             else i=-1;
+}
+
